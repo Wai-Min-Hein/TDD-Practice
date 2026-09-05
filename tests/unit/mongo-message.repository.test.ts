@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { MongoMessageRepository } from "../../src/repositories/mongo-message.repository";
+import { MongoMessageRepository } from "../../src/adapters/mongo-message.repository";
 
 describe("MongoMessageRepository", () => {
   it("creates a message document", async () => {

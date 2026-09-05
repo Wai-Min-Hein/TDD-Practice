@@ -3,7 +3,7 @@ import { Server } from "socket.io";
 import { app } from "./src/app";
 import { connectDatabase } from "./src/config/database";
 import { env } from "./src/config/env";
-import { MongoMessageRepository } from "./src/repositories/mongo-message.repository";
+import { MongoMessageRepository } from "./src/adapters/mongo-message.repository";
 import { registerMessagingSocket } from "./src/socket/messaging.socket";
 
 const startServer = async (): Promise<void> => {

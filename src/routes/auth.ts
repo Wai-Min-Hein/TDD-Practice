@@ -1,13 +1,13 @@
 import { Router } from "express";
-import { InMemoryAuthRepository } from "../adapters/in-memory-auth-repository";
-import { PlainPasswordHasher } from "../adapters/plain-password-hasher";
-import { RandomTokenGenerator } from "../adapters/random-token-generator";
+import { MongoAuthRepository } from "../adapters/mongo-auth.repository";
+import { BcryptPasswordHasher } from "../adapters/bcrypt-password-hasher";
+import { JwtTokenGenerator } from "../adapters/jwt-token-generator";
 import { AuthService } from "../services/auth.service";
 
 const authService = new AuthService({
-  repository: new InMemoryAuthRepository(),
-  passwordHasher: new PlainPasswordHasher(),
-  tokenGenerator: new RandomTokenGenerator(),
+  repository: new MongoAuthRepository(),
+  passwordHasher: new BcryptPasswordHasher(),
+  tokenGenerator: new JwtTokenGenerator(),
 });
 export const authRouter = Router();
 

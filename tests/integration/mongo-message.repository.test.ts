@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { env } from "../../src/config/env";
 import { Message } from "../../src/models/message.model";
-import { MongoMessageRepository } from "../../src/repositories/mongo-message.repository";
+import { MongoMessageRepository } from "../../src/adapters/mongo-message.repository";
 
 describe("MongoMessageRepository integration", () => {
   const repository = new MongoMessageRepository();
