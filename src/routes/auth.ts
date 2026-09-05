@@ -1,28 +1,30 @@
-import { randomUUID } from "node:crypto";
 import { Router } from "express";
+import { InMemoryAuthRepository } from "../adapters/in-memory-auth-repository";
+import { PlainPasswordHasher } from "../adapters/plain-password-hasher";
+import { RandomTokenGenerator } from "../adapters/random-token-generator";
+import { AuthService } from "../services/auth.service";
 
-type User = { name: string; email: string; password: string };
-
-const users = new Map<string, User>();
+const authService = new AuthService({
+  repository: new InMemoryAuthRepository(),
+  passwordHasher: new PlainPasswordHasher(),
+  tokenGenerator: new RandomTokenGenerator(),
+});
 export const authRouter = Router();
 
-authRouter.post("/register", (request, response) => {
-  const user = request.body as User;
-  users.set(user.email, user);
-
-  response.status(201).json({
-    user: { name: user.name, email: user.email },
-  });
+authRouter.post("/register", async (request, response, next) => {
+  try {
+    const user = await authService.register(request.body);
+    response.status(201).json({ user });
+  } catch (error) {
+    next(error);
+  }
 });
 
-authRouter.post("/login", (request, response) => {
-  const credentials = request.body as Pick<User, "email" | "password">;
-  const user = users.get(credentials.email);
-
-  if (!user || user.password !== credentials.password) {
-    response.status(401).json({ error: "Invalid credentials" });
-    return;
+authRouter.post("/login", async (request, response) => {
+  try {
+    const result = await authService.login(request.body);
+    response.status(200).json(result);
+  } catch (error) {
+    response.status(401).json({ error: (error as Error).message });
   }
-
-  response.status(200).json({ token: randomUUID() });
 });
