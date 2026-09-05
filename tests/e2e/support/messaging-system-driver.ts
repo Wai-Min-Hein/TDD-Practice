@@ -20,7 +20,7 @@ export class MessagingSystemDriver {
     this.socketServer = new SocketIOServer(this.httpServer, {
       transports: ["websocket"],
     });
-    registerMessagingSocket(this.socketServer);
+    registerMessagingSocket(this.socketServer, { save: async () => {} });
     await new Promise<void>((resolve) =>
       this.httpServer?.listen(0, "127.0.0.1", resolve),
     );

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { JoinRoomHandler } from "../../src/domain/join-room-handler";
+import { JoinRoomService } from "../../src/services/join-room.service";
 import type { RoomMembership } from "../../src/ports/room-membership";
 
 describe("joining a room", () => {
@@ -7,9 +7,9 @@ describe("joining a room", () => {
     const roomMembership: RoomMembership = {
       addParticipant: vi.fn().mockResolvedValue(undefined),
     };
-    const handler = new JoinRoomHandler(roomMembership);
+    const service = new JoinRoomService(roomMembership);
 
-    await handler.handle({ participantName: "Alice", roomName: "general" });
+    await service.join({ participantName: "Alice", roomName: "general" });
 
     expect(roomMembership.addParticipant).toHaveBeenCalledWith("Alice", "general");
   });
