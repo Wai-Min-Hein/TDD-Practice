@@ -1,17 +1,42 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SendMessageService } from "../../src/services/send-message.service";
 import type { MessageBroadcaster } from "../../src/ports/message-broadcaster";
 import type { MessageRepository } from "../../src/ports/message-repository";
 
+const fakeCommand = {
+  roomName: "general",
+  participantName: "Alice",
+  text: "Hello Bob!",
+};
+
+const mockRepository: MessageRepository = {
+  save: vi.fn(),
+};
+
+const mockBroadcaster: MessageBroadcaster = {
+  broadcast: vi.fn(),
+};
+
+const service = new SendMessageService(mockRepository, mockBroadcaster);
+
 describe("sending a room message", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("saves the message before broadcasting it", async () => {
-    const repository: MessageRepository = { save: vi.fn().mockResolvedValue(undefined) };
-    const broadcaster: MessageBroadcaster = { broadcast: vi.fn() };
-    const service = new SendMessageService(repository, broadcaster);
+    vi.mocked(mockRepository.save).mockResolvedValue(undefined);
 
-    await service.send({ roomName: "general", participantName: "Alice", text: "Hello Bob!" });
+    const result = await service.send(fakeCommand);
 
-    expect(repository.save).toHaveBeenCalledWith("general", { author: "Alice", text: "Hello Bob!" });
-    expect(broadcaster.broadcast).toHaveBeenCalledWith("general", { author: "Alice", text: "Hello Bob!" });
+    expect(result).toBeUndefined();
+    expect(mockRepository.save).toHaveBeenCalledWith("general", {
+      author: "Alice",
+      text: "Hello Bob!",
+    });
+    expect(mockBroadcaster.broadcast).toHaveBeenCalledWith("general", {
+      author: "Alice",
+      text: "Hello Bob!",
+    });
   });
 });
