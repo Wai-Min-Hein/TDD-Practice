@@ -39,4 +39,36 @@ describe("sending a room message", () => {
       text: "Hello Bob!",
     });
   });
+
+  it("does not broadcast when saving fails", async () => {
+    vi.mocked(mockRepository.save).mockRejectedValue(
+      new Error("Database unavailable"),
+    );
+
+    await expect(service.send(fakeCommand)).rejects.toThrow(
+      "Database unavailable",
+    );
+
+    expect(mockBroadcaster.broadcast).not.toHaveBeenCalled();
+  });
+
+  it("persists the message even when broadcasting fails", async () => {
+    vi.mocked(mockRepository.save).mockResolvedValue(undefined);
+    vi.mocked(mockBroadcaster.broadcast).mockImplementation(() => {
+      throw new Error("Socket.IO unavailable");
+    });
+
+    await expect(service.send(fakeCommand)).rejects.toThrow(
+      "Socket.IO unavailable",
+    );
+
+    expect(mockRepository.save).toHaveBeenCalledWith("general", {
+      author: "Alice",
+      text: "Hello Bob!",
+    });
+    expect(mockBroadcaster.broadcast).toHaveBeenCalledWith("general", {
+      author: "Alice",
+      text: "Hello Bob!",
+    });
+  });
 });
