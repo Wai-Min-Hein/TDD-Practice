@@ -1,6 +1,9 @@
 import type { Server } from "socket.io";
+import { SendMessageHandler } from "../domain/send-message-handler";
+import { SocketIoMessageBroadcaster } from "../adapters/socket-io-message-broadcaster";
 
 export function registerMessagingSocket(io: Server): void {
+  const sendMessage = new SendMessageHandler(new SocketIoMessageBroadcaster(io));
   io.on("connection", (socket) => {
     socket.on(
       "join-room",
@@ -19,7 +22,7 @@ export function registerMessagingSocket(io: Server): void {
         const room = socket.data.roomName as string | undefined;
         const author = socket.data.participantName as string | undefined;
         if (!room || !author) return;
-        io.to(room).emit("message-received", { author, text: command.text });
+        sendMessage.handle({ roomName: room, participantName: author, text: command.text });
         acknowledge();
       },
     );
