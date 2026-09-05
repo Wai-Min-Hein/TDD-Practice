@@ -1,4 +1,6 @@
 import type { Server } from "socket.io";
+import { JoinRoomHandler } from "../domain/join-room-handler";
+import { SocketIoRoomMembership } from "../adapters/socket-io-room-membership";
 import { SendMessageHandler } from "../domain/send-message-handler";
 import { SocketIoMessageBroadcaster } from "../adapters/socket-io-message-broadcaster";
 
@@ -13,7 +15,8 @@ export function registerMessagingSocket(io: Server): void {
       ) => {
         socket.data.participantName = command.participantName;
         socket.data.roomName = command.roomName;
-        void Promise.resolve(socket.join(command.roomName)).then(acknowledge);
+        const joinRoom = new JoinRoomHandler(new SocketIoRoomMembership(socket));
+        void joinRoom.handle(command).then(acknowledge);
       },
     );
     socket.on(
