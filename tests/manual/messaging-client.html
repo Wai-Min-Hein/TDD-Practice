@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Socket TDD Messaging Client</title>
+    <style>
+      body { font: 16px system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; }
+      label { display: block; margin: .75rem 0 .25rem; }
+      input, button { font: inherit; padding: .5rem; }
+      input { width: 100%; box-sizing: border-box; }
+      button { margin: 1rem .5rem 0 0; cursor: pointer; }
+      #log { background: #111; color: #eee; min-height: 180px; padding: 1rem; white-space: pre-wrap; margin-top: 1rem; }
+    </style>
+  </head>
+  <body>
+    <h1>Socket TDD Messaging Client</h1>
+    <label for="participant">Participant</label>
+    <input id="participant" value="Alice" />
+    <label for="room">Room</label>
+    <input id="room" value="general" />
+    <label for="message">Message</label>
+    <input id="message" placeholder="Type a message" />
+    <div>
+      <button id="connect">Connect and join</button>
+      <button id="send" disabled>Send message</button>
+    </div>
+    <pre id="log"></pre>
+
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+    <script>
+      const logElement = document.querySelector("#log");
+      const write = (value) => { logElement.textContent += `${value}\n`; };
+      let socket;
+
+      document.querySelector("#connect").addEventListener("click", () => {
+        const participantName = document.querySelector("#participant").value.trim();
+        const roomName = document.querySelector("#room").value.trim();
+        socket = io("http://localhost:3000", { transports: ["websocket"] });
+        socket.on("connect", () => {
+          socket.emit("join-room", { participantName, roomName }, () => {
+            write(`Joined ${roomName} as ${participantName}`);
+            document.querySelector("#send").disabled = false;
+          });
+        });
+        socket.on("message-received", (message) => write(`${message.author}: ${message.text}`));
+        socket.on("connect_error", (error) => write(`Connection error: ${error.message}`));
+      });
+
+      document.querySelector("#send").addEventListener("click", () => {
+        const text = document.querySelector("#message").value.trim();
+        if (!text || !socket) return;
+        socket.emit("send-message", { text }, () => write("Message sent"));
+        document.querySelector("#message").value = "";
+      });
+    </script>
+  </body>
+</html>
