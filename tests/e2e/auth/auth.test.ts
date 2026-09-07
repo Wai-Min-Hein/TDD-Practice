@@ -25,4 +25,25 @@ describe("authentication", () => {
 
     await system.stop();
   });
+
+  it("rejects login with an incorrect password", async () => {
+    const system = new AuthSystemDriver();
+    await system.start();
+
+    await system.register({
+      name: "Bob",
+      email: "bob@example.com",
+      password: "Password123!",
+    });
+
+    const login = await system.login({
+      email: "bob@example.com",
+      password: "WrongPassword!",
+    });
+
+    expect(login.status).toBe(401);
+    expect(login.body).toMatchObject({ error: "Invalid credentials" });
+
+    await system.stop();
+  });
 });

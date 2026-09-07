@@ -1,6 +1,8 @@
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
+import mongoose from "mongoose";
 import { app } from "../../../src/app";
+import { env } from "../../../src/config/env";
 
 type Credentials = { email: string; password: string };
 type Registration = Credentials & { name: string };
@@ -11,6 +13,7 @@ export class AuthSystemDriver {
   private baseUrl?: string;
 
   async start(): Promise<void> {
+    await mongoose.connect(env.MONGODB_URI);
     this.server = createServer(app);
     await new Promise<void>((resolve) => this.server?.listen(0, "127.0.0.1", resolve));
     const address = this.server.address() as AddressInfo;
@@ -27,6 +30,7 @@ export class AuthSystemDriver {
 
   async stop(): Promise<void> {
     await new Promise<void>((resolve, reject) => this.server?.close((error) => error ? reject(error) : resolve()));
+    await mongoose.disconnect();
   }
 
   private async request(path: string, body: object): Promise<{ status: number; body: ResponseBody }> {
