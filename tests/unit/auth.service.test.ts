@@ -3,6 +3,7 @@ import { AuthService } from "../../src/services/auth.service";
 import type { AuthRepository } from "../../src/ports/auth-repository";
 import type { PasswordHasher } from "../../src/ports/password-hasher";
 import type { TokenGenerator } from "../../src/ports/token-generator";
+import { DuplicateEmailError } from "../../src/services/auth.errors";
 
 const fakeRegistration = {
   name: "Alice",
@@ -65,5 +66,50 @@ describe("AuthService", () => {
     expect(mockPasswordHasher.compare).toHaveBeenCalledWith(fakeRegistration.password, fakeUser.passwordHash);
     expect(mockTokenGenerator.generate).toHaveBeenCalledWith(fakeUser.id);
     expect(result).toEqual({ token: "token-1" });
+  });
+
+  it("rejects registration when the email already exists", async () => {
+    vi.mocked(mockRepository.findByEmail).mockResolvedValue(fakeUser);
+
+    await expect(service.register(fakeRegistration)).rejects.toBeInstanceOf(
+      DuplicateEmailError,
+    );
+
+    expect(mockPasswordHasher.hash).not.toHaveBeenCalled();
+    expect(mockRepository.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects login when the user does not exist", async () => {
+    vi.mocked(mockRepository.findByEmail).mockResolvedValue(null);
+
+    await expect(
+      service.login({ email: fakeRegistration.email, password: fakeRegistration.password }),
+    ).rejects.toThrow("Invalid credentials");
+
+    expect(mockPasswordHasher.compare).not.toHaveBeenCalled();
+    expect(mockTokenGenerator.generate).not.toHaveBeenCalled();
+  });
+
+  it("rejects login when the password is incorrect", async () => {
+    vi.mocked(mockRepository.findByEmail).mockResolvedValue(fakeUser);
+    vi.mocked(mockPasswordHasher.compare).mockResolvedValue(false);
+
+    await expect(
+      service.login({ email: fakeUser.email, password: "WrongPassword!" }),
+    ).rejects.toThrow("Invalid credentials");
+
+    expect(mockTokenGenerator.generate).not.toHaveBeenCalled();
+  });
+
+  it("propagates repository failures during registration", async () => {
+    vi.mocked(mockRepository.findByEmail).mockRejectedValue(
+      new Error("Database unavailable"),
+    );
+
+    await expect(service.register(fakeRegistration)).rejects.toThrow(
+      "Database unavailable",
+    );
+
+    expect(mockPasswordHasher.hash).not.toHaveBeenCalled();
   });
 });

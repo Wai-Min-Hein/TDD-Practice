@@ -22,4 +22,13 @@ describe("MongoMessageRepository", () => {
     await expect(repository.save("general", { author: "", text: "" })).rejects.toThrow();
     expect(create).not.toHaveBeenCalled();
   });
+
+  it("propagates database failures", async () => {
+    const create = vi.fn().mockRejectedValue(new Error("Database unavailable"));
+    const repository = new MongoMessageRepository({ create } as never);
+
+    await expect(
+      repository.save("general", { author: "Alice", text: "Hello Bob!" }),
+    ).rejects.toThrow("Database unavailable");
+  });
 });

@@ -3,6 +3,7 @@ import { MongoAuthRepository } from "../adapters/mongo-auth.repository";
 import { BcryptPasswordHasher } from "../adapters/bcrypt-password-hasher";
 import { JwtTokenGenerator } from "../adapters/jwt-token-generator";
 import { AuthService } from "../services/auth.service";
+import { DuplicateEmailError } from "../services/auth.errors";
 
 const authService = new AuthService({
   repository: new MongoAuthRepository(),
@@ -16,6 +17,10 @@ authRouter.post("/register", async (request, response, next) => {
     const user = await authService.register(request.body);
     response.status(201).json({ user });
   } catch (error) {
+    if (error instanceof DuplicateEmailError) {
+      response.status(409).json({ error: error.message });
+      return;
+    }
     next(error);
   }
 });

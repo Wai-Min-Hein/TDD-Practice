@@ -28,4 +28,12 @@ describe("joining a room", () => {
       "general",
     );
   });
+
+  it("propagates membership failures", async () => {
+    vi.mocked(mockRoomMembership.addParticipant).mockRejectedValue(
+      new Error("Socket unavailable"),
+    );
+
+    await expect(service.join(fakeCommand)).rejects.toThrow("Socket unavailable");
+  });
 });

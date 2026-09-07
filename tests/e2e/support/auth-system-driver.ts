@@ -3,6 +3,7 @@ import type { AddressInfo } from "node:net";
 import mongoose from "mongoose";
 import { app } from "../../../src/app";
 import { env } from "../../../src/config/env";
+import { AuthUser } from "../../../src/models/auth-user.model";
 
 type Credentials = { email: string; password: string };
 type Registration = Credentials & { name: string };
@@ -11,6 +12,7 @@ type ResponseBody = { user?: { email: string }; token?: string };
 export class AuthSystemDriver {
   private server?: Server;
   private baseUrl?: string;
+  private readonly registeredEmails = new Set<string>();
 
   async start(): Promise<void> {
     await mongoose.connect(env.MONGODB_URI);
@@ -21,7 +23,9 @@ export class AuthSystemDriver {
   }
 
   async register(input: Registration): Promise<{ status: number; body: ResponseBody }> {
-    return this.request("/api/v1/auth/register", input);
+    const result = await this.request("/api/v1/auth/register", input);
+    if (result.status === 201) this.registeredEmails.add(input.email);
+    return result;
   }
 
   async login(input: Credentials): Promise<{ status: number; body: ResponseBody }> {
@@ -30,6 +34,7 @@ export class AuthSystemDriver {
 
   async stop(): Promise<void> {
     await new Promise<void>((resolve, reject) => this.server?.close((error) => error ? reject(error) : resolve()));
+    await AuthUser.deleteMany({ email: { $in: [...this.registeredEmails] } });
     await mongoose.disconnect();
   }
 

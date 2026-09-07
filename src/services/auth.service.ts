@@ -1,6 +1,7 @@
 import type { AuthRepository, AuthUser } from "../ports/auth-repository";
 import type { PasswordHasher } from "../ports/password-hasher";
 import type { TokenGenerator } from "../ports/token-generator";
+import { DuplicateEmailError } from "./auth.errors";
 
 export interface RegisterCommand {
   name: string;
@@ -23,6 +24,11 @@ export class AuthService {
   constructor(private readonly dependencies: AuthServiceDependencies) {}
 
   async register(command: RegisterCommand): Promise<Pick<AuthUser, "id" | "name" | "email">> {
+    const existingUser = await this.dependencies.repository.findByEmail(command.email);
+    if (existingUser) {
+      throw new DuplicateEmailError();
+    }
+
     const passwordHash = await this.dependencies.passwordHasher.hash(command.password);
     const user = await this.dependencies.repository.create({
       name: command.name,
