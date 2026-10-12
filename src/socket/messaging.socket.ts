@@ -16,6 +16,7 @@ export function registerMessagingSocket(io: Server): void {
         void Promise.resolve(socket.join(command.roomName)).then(acknowledge);
       },
     );
+    
     socket.on(
       "send-message",
       (command: { text: string }, acknowledge: () => void) => {
