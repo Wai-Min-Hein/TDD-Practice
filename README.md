@@ -52,3 +52,8 @@ the missing application, not because of an unclear assertion or test setup.
 - Catch the room-join event at the boundary and discover collaborators outside-in.
 - Catch the send-message event and deliver it to room participants.
 - Add failures and boundary cases only after the happy path is green.
+
+
+
+
+
