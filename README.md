@@ -3,52 +3,54 @@
 A Node.js, Express, TypeScript, WebSocket, and Socket.IO messaging project grown
 outside-in using London-school TDD and object-oriented design.
 
-## Local configuration
+## Run locally
 
-Copy `.env.example` to `.env`. The local setup uses:
-
-```env
-MONGODB_URI=mongodb://localhost:27017/socket-tdd
-```
-
-MongoDB must be running before starting the application:
-
-```bash
-brew services start mongodb-community@8.0
-pnpm start
-```
-
-## Current step: 1 — write the failing E2E acceptance test
-
-The first happy-path behavior is:
-
-> A message sent by one participant is delivered to another participant in the
-> same room.
-
-The acceptance test speaks only in domain terms. `MessagingSystemDriver` is the
-boundary that will hide ports, Socket.IO events, acknowledgements, and process
-lifecycle details.
-
-### Run this step
+Use Node.js 22 or newer and the pnpm version specified in `package.json`.
 
 ```bash
 pnpm install
-pnpm test:e2e
+pnpm start
 ```
 
-Expected result: **RED** with this diagnostic:
+The server listens at `http://127.0.0.1:3000`. Set `PORT` in the environment or
+in an optional `.env` file to change the port. Messages are delivered live in
+memory; this feature does not require MongoDB.
 
-```text
-Messaging application is not connected yet; build the walking skeleton next
+## Room messaging
+
+Participants join one room per connection. Sending a message delivers
+`{ author, text }` to everyone in that room, including the sender. Joining a new
+room leaves the previous room. Messages are not stored for later delivery.
+
+Connect using a Socket.IO client:
+
+```ts
+import { io } from "socket.io-client";
+
+const socket = io("http://127.0.0.1:3000");
+socket.on("message", (message) => console.log(message));
+
+socket.on("connect", async () => {
+  await socket.timeout(2000).emitWithAck("join-room", {
+    participantName: "Alice",
+    roomName: "general",
+  });
+  await socket.timeout(2000).emitWithAck("send-message", { text: "Hello!" });
+});
 ```
 
-That failure is intentional. It proves the acceptance test runs and fails for
-the missing application, not because of an unclear assertion or test setup.
+Both commands acknowledge with `{ ok: true }`. Sending before joining a room
+returns `{ ok: false, error: "Join a room before sending a message" }`.
 
-## TDD notebook (not implemented yet)
+## Verification
 
-- Connect the E2E system driver to a real application boundary.
-- Establish the smallest Express + Socket.IO walking skeleton.
-- Catch the room-join event at the boundary and discover collaborators outside-in.
-- Catch the send-message event and deliver it to room participants.
-- Add failures and boundary cases only after the happy path is green.
+```bash
+pnpm typecheck
+pnpm test
+```
+
+The acceptance suite uses a real server on an ephemeral port and real Socket.IO
+clients. It covers delivery, room isolation, and switching rooms. The
+`MessagingSystemDriver` keeps transport details out of the scenarios.
+
+See [TDD-WORKFLOW.md](TDD-WORKFLOW.md) for the outside-in development workflow.
